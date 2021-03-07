@@ -123,4 +123,31 @@ class alphabetical(Bot):
     def move(self, board: chess.Board):
         move = sorted([move.uci() for move in board.legal_moves])[0]
         return chess.Move.from_uci(move)
+
+class _hubble_swarm(Bot):
+    def move(self, board: chess.Board, turn: bool):
+        moves_by_distance = {}
+        for move in board.legal_moves:
+            cp = board.copy()
+            cp.push(move)
+            king_position = cp.king(turn)
+            total_distance = sum([chess.square_distance(square, king_position) 
+                                  for (square, piece) in cp.piece_map().items()
+                                  if piece.color == board.turn])
+            if total_distance in moves_by_distance:
+                moves_by_distance[total_distance].append(move)
+            else:
+                moves_by_distance[total_distance] = [move,]
+        distance = min(moves_by_distance.keys())
+        return random.choice(moves_by_distance[distance])
+
+class huddle(_hubble_swarm):
+    
+    def move(self, board: chess.Board):
+        return super().move(board, board.turn)
+
+class swarm(_hubble_swarm):
+    
+    def move(self, board: chess.Board):
+        return super().move(board, not board.turn)
         
