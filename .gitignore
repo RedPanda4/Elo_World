@@ -2,3 +2,5 @@ board.svg
 *.pgn
 Lichess Elite Database.7z
 *.pyc
+*.pkl
+*.json

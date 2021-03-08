@@ -21,7 +21,7 @@ while not b.is_game_over():
         b.push(p1.move(cp))
     else:
         b.push(p2.move(cp))
-    #save(b)
-    print(b.halfmove_clock)
+    #save(b)    print()
+    #print(b.halfmove_clock)
     #time.sleep(0.8)
 save(b)
