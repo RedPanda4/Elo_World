@@ -2,7 +2,7 @@ import chess.pgn
 import glob
 from threading import Thread, Semaphore
 from copy import deepcopy
-import peewee # TODO try with db to see if uses less space
+import db_pony 
 
 import gc
 
@@ -96,6 +96,17 @@ import pickle
 
 with open("bjson.pkl", 'wb') as Outfile:
     pickle.dump(boards, Outfile)
+s = "{0} of {1} board"
+len_boards = len(boards)
+n_boards = 0
+for board_state in boards:
+    with db_pony.db_session():
+        n_boards += 1
+        b = db_pony.Board(id_n=hash(board_state), fen=board_state)
+        for move in boards[board_state]:
+            m = db_pony.Move(board=b,move=move,number=boards[board_state][move])
+        print(s.format(n_boards, len_boards))
+
 #with open("json.json", 'w') as Outfile:
 #    Outfile.write(json.dumps(boards, indent=4))
 #" ".join(board.fen().split(' ')[:4])

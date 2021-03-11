@@ -14,7 +14,7 @@ black_spaces = ["a1", "a3", "a5", "a7", "b2", "b4", "b6", "b8",
                 "g1", "g3", "g5", "g7", "h2", "h4", "h6", "h8",
                 ]
 
-Vaules = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9}
+Vaules = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K":0}
 
 
 class Bot:
@@ -150,4 +150,39 @@ class swarm(_hubble_swarm):
     
     def move(self, board: chess.Board):
         return super().move(board, not board.turn)
+
+class generous(Bot):
+    
+    def move(self, board: chess.Board):
+        turn = board.turn
+        moves = []
+        for move in board.legal_moves:
+            points = 0
+            cp = board.copy()
+            cp.push(move)
+            piece_map = cp.piece_map()
+            for square in piece_map:
+                if piece_map[square].color == turn:
+                    attakers = len(cp.attackers(not turn, square))
+                    piece = Vaules[piece_map[square].symbol().capitalize()]
+                    points += attakers * piece
+            moves.append((points, move.uci()))
+        points = max(moves)[0]
+        moves = [move[1] for move in moves if move[0] == points]
+        return chess.Move.from_uci(random.choice(moves))
+
+class no_i_insist(Bot):
+    
+    def move(self, board: chess.Board):
+        raise NotImplementedError
+        checks = []
+        kills = []
+        for move in board.legal_moves:
+            cp = board.copy()
+            cp.push(move)
+            if cp.is_checkmate() or cp.is_check():
+                checks.append(move)
+            if board.is_capture(move):
+                kills.append(move)
+                
         

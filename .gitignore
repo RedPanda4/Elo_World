@@ -4,3 +4,4 @@ Lichess Elite Database.7z
 *.pyc
 *.pkl
 *.json
+*.db
