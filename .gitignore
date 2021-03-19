@@ -5,3 +5,5 @@ Lichess Elite Database.7z
 *.pkl
 *.json
 *.db
+/venv/
+/.idea/

@@ -2,7 +2,7 @@ import chess.pgn
 import glob
 from threading import Thread, Semaphore
 from copy import deepcopy
-import db_pony 
+import pandas as pd
 
 import gc
 
@@ -12,6 +12,7 @@ boards = {}
 dict_lock = Semaphore()
 file_lock = Semaphore()
 
+
 def join_boards(board_a, board_b):
     for key in board_b.keys():
         if key in board_a:
@@ -19,31 +20,31 @@ def join_boards(board_a, board_b):
                 if key_2 in board_a[key]:
                     board_a[key][key_2] += board_b[key][key_2]
                 else:
-                    board_a[key][key_2] =board_b[key][key_2]
+                    board_a[key][key_2] = board_b[key][key_2]
         else:
             board_a[key] = board_b[key]
-    
+
     return board_a
 
 
-def clean_game(game:chess.pgn.Game, local_boards: dict):
+def clean_game(game: chess.pgn.Game, local_boards: dict):
     board = game.board()
     for move in game.mainline_moves():
-        
+
         board_fen = " ".join(board.fen().split(' ')[:4])
         if board_fen in local_boards:
             fen = local_boards[board_fen]
-            
+
             if move.uci() in fen:
                 fen[move.uci()] += 1
-            
+
             else:
                 fen[move.uci()] = 1
-        
+
         else:
-            local_boards[board_fen] = {move.uci():1,}
+            local_boards[board_fen] = {move.uci(): 1, }
         board.push(move)
-    
+
     return local_boards
 
 
@@ -55,6 +56,7 @@ s_file = 0
 n_files = len(files)
 s = "{0} of {1} files| {2} games loaded"
 games = 0
+
 
 def thread_f(filelock: Semaphore, dict_lock: Semaphore, n):
     global index_file, boards, games, s, s_file
@@ -76,7 +78,7 @@ def thread_f(filelock: Semaphore, dict_lock: Semaphore, n):
                 game = chess.pgn.read_game(inFile)
                 if game:
                     thread_boards = clean_game(game, thread_boards)
-        
+
         dict_lock.acquire()
         games += g
         boards = deepcopy(join_boards(boards, thread_boards))
@@ -84,14 +86,13 @@ def thread_f(filelock: Semaphore, dict_lock: Semaphore, n):
         print(s.format(s_file, n_files, games))
         gc.collect()
         dict_lock.release()
-    
 
-thread_l = [Thread(target=thread_f, args=(file_lock, dict_lock, n)) for n in range(8)]
+
+thread_l = [Thread(target=thread_f, args=(file_lock, dict_lock, n)) for n in range(16)]
 [t.start() for t in thread_l]
 [t.join() for t in thread_l]
 
-
-#import json
+# import json
 import pickle
 
 with open("bjson.pkl", 'wb') as Outfile:
@@ -99,15 +100,18 @@ with open("bjson.pkl", 'wb') as Outfile:
 s = "{0} of {1} board"
 len_boards = len(boards)
 n_boards = 0
+narray = []
 for board_state in boards:
-    with db_pony.db_session():
-        n_boards += 1
-        b = db_pony.Board(id_n=hash(board_state), fen=board_state)
-        for move in boards[board_state]:
-            m = db_pony.Move(board=b,move=move,number=boards[board_state][move])
-        print(s.format(n_boards, len_boards))
+    for move in board_state:
+        narray.append([board_state, move, board_state])
 
-#with open("json.json", 'w') as Outfile:
+df = pd.DataFrame(narray, columns=['board', 'move', 'frequency'])
+print(df.info)
+
+from sqlalchemy import create_engine
+engine = create_engine('sqlite://chess.db', echo=False)
+df.to_sql('boards', con=engine, if_exists='replace')
+# with open("json.json", 'w') as Outfile:
 #    Outfile.write(json.dumps(boards, indent=4))
-#" ".join(board.fen().split(' ')[:4])
-#print(games[0].game())
+# " ".join(board.fen().split(' ')[:4])
+# print(games[0].game())
