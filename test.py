@@ -12,8 +12,8 @@ def save(Board:chess.Board):
 
 
 b = chess.Board()
-p1 = bots.random_move()
-p2 = bots.generous()
+p1 = bots.no_i_insist()
+p2 = bots.no_i_insist()
 
 while not b.is_game_over():
     cp = b.copy()
@@ -23,5 +23,5 @@ while not b.is_game_over():
         b.push(p2.move(cp))
     save(b)
     #print(b.halfmove_clock)
-    time.sleep(0.8)
+    time.sleep(1)
 save(b)

@@ -106,10 +106,9 @@ for board_state in boards:
         narray.append([board_state, move, board_state])
 
 df = pd.DataFrame(narray, columns=['board', 'move', 'frequency'])
-print(df.info)
 
 from sqlalchemy import create_engine
-engine = create_engine('sqlite://chess.db', echo=False)
+engine = create_engine('sqlite:///chess.db', echo=False)
 df.to_sql('boards', con=engine, if_exists='replace')
 # with open("json.json", 'w') as Outfile:
 #    Outfile.write(json.dumps(boards, indent=4))
