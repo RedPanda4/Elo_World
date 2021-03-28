@@ -25,13 +25,13 @@ class Bot:
         raise NotImplementedError
 
 
-class random_move(Bot):
+class RandomMove(Bot):
 
     def move(self, board: chess.Board):
         return random.choice(list(board.legal_moves))
 
 
-class same_color(Bot):
+class SameColor(Bot):
 
     def move(self, board: chess.Board):
 
@@ -49,7 +49,7 @@ class same_color(Bot):
         return random.choice(moves)
 
 
-class oposite_color(Bot):
+class OpositeColor(Bot):
 
     def move(self, board: chess.Board):
 
@@ -67,7 +67,7 @@ class oposite_color(Bot):
         return random.choice(moves)
 
 
-class pacifist(Bot):
+class Pacifist(Bot):
     """
     1.Avoid moves that mate the opponent
     2.avoid moves that check
@@ -78,7 +78,7 @@ class pacifist(Bot):
 
     def move(self, board: chess.Board):
         """
-        arg moves 
+        arg moves
         """
         moves: List[List, List, List, List, List,
                     List, List] = [[], [], [], [], [], [], []]
@@ -113,20 +113,20 @@ class pacifist(Bot):
         return random.choice(choices)
 
 
-class first_move(Bot):
+class FirstMove(Bot):
 
     def move(self, board: chess.Board):
         return list(board.legal_moves)[0]
 
 
-class alphabetical(Bot):
+class Alphabetical(Bot):
 
     def move(self, board: chess.Board):
         move = sorted([move.uci() for move in board.legal_moves])[0]
         return chess.Move.from_uci(move)
 
 
-class _hubble_swarm(Bot):
+class _HubbleSwarm(Bot):
     def move(self, board: chess.Board, turn: bool = True):
         moves_by_distance = {}
         for move in board.legal_moves:
@@ -144,19 +144,19 @@ class _hubble_swarm(Bot):
         return random.choice(moves_by_distance[distance])
 
 
-class huddle(_hubble_swarm):
+class Huddle(_HubbleSwarm):
 
     def move(self, board: chess.Board, **kwargs):
         return super().move(board, board.turn)
 
 
-class swarm(_hubble_swarm):
+class Swarm(_HubbleSwarm):
 
     def move(self, board: chess.Board, **kwargs):
         return super().move(board, not board.turn)
 
 
-class generous(Bot):
+class Generous(Bot):
 
     def move(self, board: chess.Board):
         turn = board.turn
@@ -177,7 +177,7 @@ class generous(Bot):
         return chess.Move.from_uci(random.choice(moves))
 
 
-class no_i_insist(Bot):
+class NoIInsist(Bot):
 
     def move(self, board: chess.Board):
         moves = {}
@@ -186,32 +186,43 @@ class no_i_insist(Bot):
         for move in board.legal_moves:
             board_move = board.copy()
             board_move.push(move)
+
+            # checks
             if board_move.is_check():
                 check.append(move)
                 continue
+
+            # caputes
             if board.is_capture(move):
-                piece = Values[board.piece_at(move.to_square).symbol().capitalize()]
+                if board.is_en_passant(move):
+                    piece = 1
+                else:
+                    piece = Values[board.piece_at(move.to_square).symbol().capitalize()]
                 if piece in capture:
                     capture[piece].append(move)
                 else:
                     capture[piece] = [move, ]
                 continue
 
+            # see what are the best moves for the opponent
             possible_moves = board_move.legal_moves.count()
             captures = 0.0
             points = 0.0
             for move_s in board_move.legal_moves:
                 if board_move.is_capture(move_s):
                     captures += 1
+
                     if board_move.is_en_passant(move_s):
                         points += 1
                     else:
                         points += Values[board_move.piece_at(move_s.to_square).symbol().capitalize()]
+            # captures = capture / all moves
+            # points = point of capture piece / all moves
             final_score = (captures / possible_moves, points / possible_moves)
             if final_score in moves:
                 moves[final_score].append(move)
             else:
-                moves[final_score] = [move,]
+                moves[final_score] = [move, ]
 
         if moves:
             return random.choice(moves[sorted(moves.keys())[-1]])
@@ -220,11 +231,13 @@ class no_i_insist(Bot):
         return random.choice(check)
 
 
-class reverse_starting(Bot):
-    pass
+class ReverseStarting(Bot):
+    def move(self, board: chess.Board):
+        raise NotImplementedError  # TODO
 
 
-class cccp(Bot):
+class CCCP(Bot):
+    huddle_b = Huddle()
 
     def move(self, board: chess.Board):
         checks = []
@@ -242,5 +255,67 @@ class cccp(Bot):
             return random.choice(checks)
         if captures:
             return random.choice(captures)
-        huddle_b = huddle()
-        return huddle_b.move(board, )
+        return self.huddle_b.move(board, )
+
+
+class SuicideKing(Bot):
+    last_move = None
+
+    def move(self, board: chess.Board):
+        player = bool(board.turn)
+        move_king = {}
+        for move in board.legal_moves:
+            if move.from_square == board.king(player):
+                d = chess.square_distance(move.to_square, board.king(not player))
+                if move in move_king:
+                    move_king[d].append(move)
+                else:
+                    move_king[d] = [move, ]
+
+        if move_king:
+            move_king = move_king[sorted(move_king.keys())[0]]
+            while len(move_king) > 0:
+                move = random.choice(move_king)
+                board_c = board.copy()
+                board_c.push(move)
+                if board_c.is_repetition(3):
+                    move_king.remove(move)
+                else:
+                    return move
+
+        return random.choice(list(board.legal_moves))
+
+
+class SysMirrorY(Bot):
+    def move(self, board: chess.Board):
+        raise NotImplementedError
+
+
+class SysMirrorX(Bot):
+    def move(self, board: chess.Board):
+        raise NotImplementedError
+
+
+class Sym180(Bot):
+    def move(self, board: chess.Board):
+        raise NotImplementedError
+
+
+class MinOpptMoves(Bot):
+    def move(self, board: chess.Board):
+        moves = {}
+        for move in board.legal_moves:
+            board_c = board.copy()
+            board_c.push(move)
+            if board_c.legal_moves.count() in moves:
+                moves[board_c.legal_moves.count()].append(move)
+            else:
+                moves[board_c.legal_moves.count()] = [move, ]
+
+        min_m = min(moves.keys())
+        return random.choice(moves[min_m])
+
+
+class Equalizer(Bot):
+    def move(self, board: chess.Board):
+        raise NotImplementedError

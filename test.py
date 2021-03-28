@@ -12,8 +12,8 @@ def save(Board:chess.Board):
 
 
 b = chess.Board()
-p1 = bots.no_i_insist()
-p2 = bots.no_i_insist()
+p1 = bots.MinOpptMoves()
+p2 = bots.MinOpptMoves()
 
 while not b.is_game_over():
     cp = b.copy()
